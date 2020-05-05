@@ -7,14 +7,13 @@ import random
 import numpy as np
 
 
-# convert a list of int into string
-# e.g. [1,1,1] -> "111"
+# convert a list of number into string
+# for example [1,1,1] -> "111"
 def list_to_str(num_list):
     return "".join(str(e) for e in num_list)
 
 
-# Select best item in list. If has several best one:
-# Choose from them randomly
+# Select best item in list. Randomly choose one when there are several best items
 def max_randomly(item_list, key_function):
     if len(item_list) == 1:
         return item_list[0]
@@ -37,8 +36,8 @@ class StrategyTable(object):
         :return: None
         """
 
-        combinations_string_list = [list_to_str(i) for i in itertools.product([0, 1], repeat=depth)]
-        self.__strategy_table = {x: random.randint(0, 1) for x in combinations_string_list}
+        string_list = [list_to_str(i) for i in itertools.product([0, 1], repeat=depth)]
+        self.__strategy_table = {x: random.randint(0, 1) for x in string_list}
         self.__weight = 0
 
     @property
@@ -161,8 +160,8 @@ class MinorityGameWithRandomChoice(MinorityGame):
             self.agent_pool.append(Agent())
 
     def run_game(self):
-        mean_list = []
-        stdd_list = []
+        means = []
+        stdds = []
         #run_num is the number of rounds
         for i in range(self.run_num):
             #the number of people deciding to go
@@ -176,7 +175,7 @@ class MinorityGameWithRandomChoice(MinorityGame):
             self.win_history[i] = winner_num
             if (i+1)%10000 == 0:
                 print("%dth round"%i)
-        return mean_list,stdd_list
+        return means,stdds
 
 class MinorityGameWithStrategyTable(MinorityGame):
     """
@@ -208,42 +207,42 @@ class MinorityGameWithStrategyTable(MinorityGame):
         """
         run the minority game n times
         """
-        mean_list = []
-        stdd_list = []
+        means = []
+        stdds = []
         #run_num rounds
         for i in range(self.run_num):
-            num_of_one = 0
-            record_count = 0
+            num_of_ones = 0
+            record_number = 0
             for agent in self.agent_pool:
                 predict_temp  = agent.predict(self.all_history[-self.depth:])
-                num_of_one += predict_temp
-            game_result = 1 if num_of_one < self.agent_num / 2 else 0
+                num_of_ones += predict_temp
+            game_result = 1 if num_of_ones < self.agent_num / 2 else 0
             for agent in self.agent_pool:
                 agent.get_winner(game_result)  #update each agent's strategies
-            winner_num = num_of_one if game_result == 1 else self.agent_num - num_of_one
+            winner_num = num_of_ones if game_result == 1 else self.agent_num - num_of_ones
             self.win_history[i] = winner_num
             self.all_history.append(game_result)
             if (i+1)%10000 == 0:
-                mean_list.append(self.win_history[:i].mean())
-                stdd_list.append(self.win_history[:i].std())
-                record_count+=1
+                means.append(self.win_history[:i].mean())
+                stdds.append(self.win_history[:i].std())
+                record_number+=1
                 print("%dth round"%i)
-        return mean_list,stdd_list
+        return means,stdds
 
 
     def winner_for_diff_group(self):
         mid = len(self.agent_pool)/len(self.strategy_num)
-        first_part_score = 0
-        second_part_score = 0
+        first_part = 0
+        second_part = 0
         index = 0
         for agent in self.agent_pool:
             if index<mid:
-                first_part_score+=agent.win_times
+                first_part+=agent.win_times
             else:
-                second_part_score+=agent.win_times
+                second_part+=agent.win_times
             index +=1
 
-        return first_part_score,second_part_score
+        return first_part,second_part
 if __name__ == "__main__":
     m = MinorityGameWithStrategyTable(201, 500, 3, 3,5)
     m.run_game()
