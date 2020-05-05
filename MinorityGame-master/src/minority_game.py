@@ -9,25 +9,25 @@ import numpy as np
 
 # convert a list of int into string
 # e.g. [1,1,1] -> "111"
-def num_list_to_str(num_list):
+def list_to_str(num_list):
     return "".join(str(e) for e in num_list)
 
 
 # Select best item in list. If has several best one:
 # Choose from them randomly
-def max_randomly(list_item, key_function):
-    if len(list_item) == 1:
-        return list_item[0]
+def max_randomly(item_list, key_function):
+    if len(item_list) == 1:
+        return item_list[0]
     else:
-        list_item.sort(key=key_function, reverse=True)
-        item_iter = 0
-        second_item_index = len(list_item) - 1
-        max_key = key_function(list_item[0])
-        for item in list_item:
-            if key_function(item) < max_key:
-                second_item_index = item_iter
-            item_iter += 1
-        return list_item[random.randint(0, second_item_index - 1)]
+        item_list.sort(key=key_function, reverse=True)
+        item_iterator = 0
+        index = len(item_list) - 1
+        max_value = key_function(item_list[0])
+        for item in item_list:
+            if key_function(item) < max_value:
+                index = item_iterator
+            item_iterator += 1
+        return item_list[random.randint(0, index - 1)]
 
 
 class StrategyTable(object):
@@ -37,7 +37,7 @@ class StrategyTable(object):
         :return: None
         """
 
-        combinations_string_list = [num_list_to_str(i) for i in itertools.product([0, 1], repeat=depth)]
+        combinations_string_list = [list_to_str(i) for i in itertools.product([0, 1], repeat=depth)]
         self.__strategy_table = {x: random.randint(0, 1) for x in combinations_string_list}
         self.__weight = 0
 
@@ -55,10 +55,6 @@ class StrategyTable(object):
         :param history: past m winning groups
         :return: next decision
         """
-        # print("history:")
-        # print(history)
-        # print(self.__strategy_table)
-        # print(self.__strategy_table[history])
         return self.__strategy_table[history]
 
     def update_weight(self, is_win):
@@ -77,7 +73,6 @@ class Agent(object):
     base class for AgentWithStrategyTable
     Also, used in random simulation
     """
-
     def predict(self):
         return random.randint(0, 1)
 
@@ -112,14 +107,14 @@ class AgentWithStrategyTable(Agent):
         :param history: last m winning group code, list of int
         :return:   next decision from a table which has the highest weight
         """
-        history = num_list_to_str(history)
+        history = list_to_str(history)
         if len(history) == self.__depth:
             self.__history = history
             strategy_choice = max_randomly(self.__strategy_pool, lambda x: x.weight)
             self.__last_choice = strategy_choice.predict(self.__history)
             return self.__last_choice
         else:
-            raise Exception("agent memory input error")
+            raise Exception("Wrongly input agent memory")
 
     # result is winner room number
     # update weights of tables
@@ -139,13 +134,13 @@ class MinorityGame(object):
     a base class for minority Game
     """
     def __init__(self, agent_num, run_num):
-        # agent 数量
+        # agent number
         self.agent_num = agent_num
-        # 游戏回合
+        # number of rounds
         self.run_num = run_num
-        #定义的agent对象集合
+        #defined the collection of agent objects
         self.agent_pool = []
-        #获胜记录
+        #Winning records
         self.win_history = np.zeros(run_num)
 
     @property
@@ -154,6 +149,7 @@ class MinorityGame(object):
         :return: the winner number mean and stdd
         """
         return self.win_history.mean(), self.win_history.std()
+
 
 class MinorityGameWithRandomChoice(MinorityGame):
     """
@@ -167,20 +163,18 @@ class MinorityGameWithRandomChoice(MinorityGame):
     def run_game(self):
         mean_list = []
         stdd_list = []
-        #run_num个回合
+        #run_num is the number of rounds
         for i in range(self.run_num):
-            #决定 去 的人数
+            #the number of people deciding to go
             num_of_one = 0
             for agent in self.agent_pool:
                 num_of_one+=agent.predict()
-            #总的game result
+            #total game result
             game_result = 1 if num_of_one<self.agent_num/2 else 0
-            #作出有利决策的agent
+            #agents who making winning strategy
             winner_num = num_of_one if game_result == 1 else self.agent_num - num_of_one
             self.win_history[i] = winner_num
             if (i+1)%10000 == 0:
-                # mean_list.append(self.win_history[:i].mean())
-                # stdd_list.append(self.win_history[:i].std())
                 print("%dth round"%i)
         return mean_list,stdd_list
 
